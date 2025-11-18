@@ -55,6 +55,9 @@ python3 patch_tool.py
 # Or make it executable and run directly
 chmod +x patch_tool.py
 ./patch_tool.py
+
+# Or simply run
+patch-tool
 ```
 
 📚 Comprehensive Usage Guide
