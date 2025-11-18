@@ -1,5 +1,4 @@
-```markdown
-# Professional Patch Tool
+## Professional Patch Tool
 
 A powerful, interactive file patching tool with advanced modular architecture, batch operations, and comprehensive patch library.
 
@@ -486,5 +485,3 @@ This tool is designed for professional development use. Always:
 ---
 
 Professional Patch Tool - Your comprehensive solution for safe, efficient code modification and migration.
-
-```
