@@ -1,0 +1,11 @@
+{
+  "enable_syntax_highlighting": true,
+  "max_preview_lines": 50,
+  "backup_keep_days": 30,
+  "enable_dry_run": true,
+  "strict_line_matching": false,
+  "auto_indent_new_code": true,
+  "default_replace_all": false,
+  "enable_advanced_search": true,
+  "log_level": "INFO"
+}
