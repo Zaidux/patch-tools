@@ -12,7 +12,7 @@ from pathlib import Path
 
 class MenuSystem:
     """Base menu system with common functionality"""
-    
+
     def __init__(self, tool_instance):
         self.tool = tool_instance
         self.menu_history = []
@@ -22,7 +22,7 @@ class MenuSystem:
         """Display a menu and get user selection"""
         print(f"\n{title}")
         print("=" * 60)
-        
+
         for option in options:
             if option.get('separator'):
                 print("-" * 60)
@@ -30,13 +30,13 @@ class MenuSystem:
                 print(f"{option['key']}. {option['label']}")
                 if option.get('description'):
                     print(f"   {option['description']}")
-        
+
         print("=" * 60)
-        
+
         while True:
             try:
                 choice = input(f"\n{prompt}: ").strip()
-                
+
                 # Check if choice matches any option key
                 valid_choices = [opt['key'] for opt in options if not opt.get('separator')]
                 if choice in valid_choices:
@@ -48,7 +48,7 @@ class MenuSystem:
                     return choice
                 else:
                     print("❌ Invalid choice. Please try again.")
-                    
+
             except KeyboardInterrupt:
                 print("\n⏹️  Operation cancelled.")
                 return '0'
@@ -60,7 +60,7 @@ class MenuSystem:
         """Get user confirmation"""
         default_text = "Y/n" if default else "y/N"
         response = input(f"{message} [{default_text}]: ").strip().lower()
-        
+
         if not response:
             return default
         return response in ['y', 'yes', '1', 'true']
@@ -72,10 +72,10 @@ class MenuSystem:
                 full_prompt = f"{prompt} [{default}]: "
             else:
                 full_prompt = f"{prompt}: "
-                
+
             try:
                 value = input(full_prompt).strip()
-                
+
                 if not value:
                     if default:
                         return default
@@ -86,7 +86,7 @@ class MenuSystem:
                         return ""
                 else:
                     return value
-                    
+
             except KeyboardInterrupt:
                 print("\n⏹️  Input cancelled.")
                 return ""
@@ -95,7 +95,7 @@ class MenuSystem:
         """Get multiline input from user"""
         print(prompt)
         print(">" * 40)
-        
+
         lines = []
         while True:
             try:
@@ -110,7 +110,7 @@ class MenuSystem:
                 break
             except EOFError:
                 break
-                
+
         print("<" * 40)
         return lines
 
@@ -127,7 +127,7 @@ class MenuSystem:
 
 class MainMenu(MenuSystem):
     """Main application menu system"""
-    
+
     def __init__(self, tool_instance):
         super().__init__(tool_instance)
         self.features_enabled = {
@@ -149,7 +149,7 @@ class MainMenu(MenuSystem):
             {'key': '7', 'label': '⚙️ Settings', 'description': 'Configure tool behavior'},
             {'key': '8', 'label': '❌ Exit', 'description': 'Exit the application'}
         ]
-        
+
         return self.display_menu("🚀 PROFESSIONAL PATCH TOOL", options, "Select option (1-8)")
 
     def show_advanced_tools_menu(self):
@@ -161,7 +161,7 @@ class MainMenu(MenuSystem):
             {'key': '4', 'label': '📊 File analysis', 'description': 'Analyze code patterns'},
             {'key': '0', 'label': '↩️ Back to main menu', 'description': 'Return to main menu'}
         ]
-        
+
         return self.display_menu("🔧 ADVANCED TOOLS", options)
 
     def handle_main_choice(self, choice: str) -> bool:
@@ -231,26 +231,26 @@ class MainMenu(MenuSystem):
         if not history:
             print("❌ No recent files")
             return True
-            
-        options = [{'key': str(i+1), 'label': f"📄 {file_path}"} 
+
+        options = [{'key': str(i+1), 'label': f"📄 {file_path}"}
                   for i, file_path in enumerate(history)]
         options.append({'key': '0', 'label': '↩️ Back'})
-        
+
         choice = self.display_menu("📂 RECENT FILES", options, "Select file")
-        
+
         if choice != '0' and choice.isdigit():
             idx = int(choice) - 1
             if 0 <= idx < len(history):
                 patch_menu = PatchMenu(self.tool)
                 patch_menu.show_patch_menu(history[idx])
-                
+
         return True
 
     def _handle_advanced_tools(self) -> bool:
         """Handle advanced tools menu"""
         while True:
             choice = self.show_advanced_tools_menu()
-            
+
             if choice == '1':
                 self._handle_diff_preview()
             elif choice == '2':
@@ -261,7 +261,7 @@ class MainMenu(MenuSystem):
                 self._handle_file_analysis()
             elif choice == '0':
                 break
-                
+
         return True
 
     def _handle_diff_preview(self) -> bool:
@@ -294,9 +294,9 @@ class MainMenu(MenuSystem):
             {'key': '3', 'label': '📊 Backup statistics', 'description': 'Show backup information'},
             {'key': '0', 'label': '↩️ Back', 'description': 'Return to previous menu'}
         ]
-        
+
         choice = self.display_menu("💾 BACKUP MANAGEMENT", options)
-        
+
         if choice == '1':
             file_path = self.get_input("Enter file path to restore")
             if file_path:
@@ -309,7 +309,7 @@ class MainMenu(MenuSystem):
                 print("❌ Invalid number")
         elif choice == '3':
             self._show_backup_statistics()
-            
+
         return True
 
     def _handle_file_analysis(self) -> bool:
@@ -331,17 +331,17 @@ class MainMenu(MenuSystem):
             print(f"\n📊 BACKUP STATISTICS")
             print(f"📁 Backup directory: {backup_dir}")
             print(f"📄 Total backups: {len(backups)}")
-            
+
             if backups:
                 # Group by file type
                 by_extension = {}
                 total_size = 0
-                
+
                 for backup in backups:
                     ext = backup.suffixes[-2] if len(backup.suffixes) > 1 else 'unknown'
                     by_extension[ext] = by_extension.get(ext, 0) + 1
                     total_size += backup.stat().st_size
-                    
+
                 print(f"💾 Total size: {self._format_size(total_size)}")
                 print(f"\n📁 Backups by type:")
                 for ext, count in by_extension.items():
@@ -360,7 +360,7 @@ class MainMenu(MenuSystem):
 
 class PatchMenu(MenuSystem):
     """Patch-specific menu system"""
-    
+
     def __init__(self, tool_instance):
         super().__init__(tool_instance)
         self.current_file_info = None
@@ -368,7 +368,7 @@ class PatchMenu(MenuSystem):
     def show_patch_menu(self, file_path: str):
         """Show the patch menu for a specific file"""
         self.current_file_info = self.tool.file_manager.get_file_info(file_path)
-        
+
         if not self.current_file_info:
             print(f"❌ File not found: {file_path}")
             return False
@@ -396,9 +396,9 @@ class PatchMenu(MenuSystem):
                 {'key': '12', 'label': '⚙️ Settings', 'description': 'Configure patching'},
                 {'key': '0', 'label': '❌ Cancel and exit', 'description': 'Discard changes and exit'}
             ]
-            
+
             choice = self.display_menu("🔧 PATCH MENU", options, "Select option (0-12)")
-            
+
             if not self._handle_patch_choice(choice, file_path):
                 break
 
@@ -421,7 +421,7 @@ class PatchMenu(MenuSystem):
             '12': self._show_patch_settings,
             '0': lambda: False
         }
-        
+
         handler = handlers.get(choice)
         if handler:
             if callable(handler):
@@ -434,11 +434,11 @@ class PatchMenu(MenuSystem):
         """Show file preview with navigation"""
         if not self.current_file_info:
             return True
-            
+
         start_line = 1
         while True:
             self.tool.display_file_preview(self.current_file_info, start_line)
-            
+
             options = [
                 {'key': 'n', 'label': 'Next page'},
                 {'key': 'p', 'label': 'Previous page'},
@@ -446,9 +446,9 @@ class PatchMenu(MenuSystem):
                 {'key': 's', 'label': 'Show specific range'},
                 {'key': 'b', 'label': 'Back to patch menu'}
             ]
-            
+
             choice = self.display_menu("📋 FILE PREVIEW", options, "Choose navigation")
-            
+
             if choice == 'n':
                 start_line = min(start_line + 20, self.current_file_info['lines'] - 19)
             elif choice == 'p':
@@ -468,33 +468,52 @@ class PatchMenu(MenuSystem):
                     print("❌ Invalid line numbers")
             elif choice == 'b':
                 break
-                
+
         return True
 
     def _search_pattern_menu(self) -> bool:
-        """Search for code patterns"""
+        """Search for code patterns with enhanced fuzzy matching"""
         pattern = self.get_input("Enter search pattern (regex)")
         if not pattern:
             return True
-            
-        matches = self.tool.patch_engine.find_code_blocks(self.current_file_info, pattern)
-        
-        if not matches:
-            print("❌ No matches found.")
-            return True
-            
-        print(f"\n🔍 Found {len(matches)} matches:")
-        for i, match in enumerate(matches):
-            print(f"\n[{i+1}] Line {match['line_number']}:")
-            print(f"    Match: {match['full_match'][:100]}{'...' if len(match['full_match']) > 100 else ''}")
 
-            if self.get_confirmation("Show context?"):
-                self.tool.show_line_range(
-                    self.current_file_info, 
-                    match['context_start'], 
-                    match['context_end']
-                )
+        # Enhanced search with fuzzy matching option
+        use_fuzzy = self.get_confirmation("Use fuzzy matching for approximate matches?")
+        
+        if use_fuzzy and hasattr(self.tool, 'fuzzy_matcher'):
+            # Use fuzzy matcher for approximate matches
+            matches = self.tool.fuzzy_matcher.fuzzy_search(pattern, self.current_file_info['line_list'])
+            print(f"\n🔍 Found {len(matches)} fuzzy matches:")
+            for i, match in enumerate(matches):
+                print(f"\n[{i+1}] Line {match['line_number']} (Score: {match['score']:.2f}):")
+                print(f"    Match: {match['content'][:100]}{'...' if len(match['content']) > 100 else ''}")
                 
+                if self.get_confirmation("Show context?"):
+                    self.tool.show_line_range(
+                        self.current_file_info,
+                        max(1, match['line_number'] - 2),
+                        min(self.current_file_info['lines'], match['line_number'] + 2)
+                    )
+        else:
+            # Use exact regex matching
+            matches = self.tool.patch_engine.find_code_blocks(self.current_file_info, pattern)
+
+            if not matches:
+                print("❌ No matches found.")
+                return True
+
+            print(f"\n🔍 Found {len(matches)} matches:")
+            for i, match in enumerate(matches):
+                print(f"\n[{i+1}] Line {match['line_number']}:")
+                print(f"    Match: {match['full_match'][:100]}{'...' if len(match['full_match']) > 100 else ''}")
+
+                if self.get_confirmation("Show context?"):
+                    self.tool.show_line_range(
+                        self.current_file_info,
+                        match['context_start'],
+                        match['context_end']
+                    )
+
         return True
 
     def _insert_at_line_menu(self) -> bool:
@@ -527,7 +546,7 @@ class PatchMenu(MenuSystem):
                 print("✅ Patch queued for application")
         except ValueError:
             print("❌ Invalid line number")
-            
+
         return True
 
     def _replace_block_menu(self) -> bool:
@@ -537,16 +556,16 @@ class PatchMenu(MenuSystem):
             {'key': '2', 'label': 'Replace by pattern match'},
             {'key': '3', 'label': 'Replace all pattern matches'}
         ]
-        
+
         choice = self.display_menu("🔄 REPLACE CODE BLOCK", options)
-        
+
         if choice == '1':
             self._replace_by_line_range()
         elif choice == '2':
             self._replace_by_pattern(single_match=True)
         elif choice == '3':
             self._replace_by_pattern(single_match=False)
-            
+
         return True
 
     def _replace_by_line_range(self):
@@ -555,7 +574,7 @@ class PatchMenu(MenuSystem):
             start_line = int(self.get_input("Start line"))
             end_line = int(self.get_input("End line"))
 
-            if (start_line < 1 or end_line > self.current_file_info['lines'] or 
+            if (start_line < 1 or end_line > self.current_file_info['lines'] or
                 start_line > end_line):
                 print("❌ Invalid line range")
                 return
@@ -645,8 +664,8 @@ class PatchMenu(MenuSystem):
 
         print(f"\nFound {len(matches)} matches. Will insert {position} first match at line {matches[0]['line_number']}")
         self.tool.show_line_range(
-            self.current_file_info, 
-            matches[0]['line_number']-1, 
+            self.current_file_info,
+            matches[0]['line_number']-1,
             matches[0]['line_number']+1
         )
 
@@ -662,7 +681,7 @@ class PatchMenu(MenuSystem):
                 'description': f'Insert {len(new_code)} lines {position} pattern at line {matches[0]["line_number"]}'
             })
             print("✅ Patch queued for application")
-            
+
         return True
 
     def _append_menu(self) -> bool:
@@ -670,14 +689,13 @@ class PatchMenu(MenuSystem):
         print(f"\nAppending to end of file (currently {self.current_file_info['lines']} lines)")
         print("Last 5 lines:")
         self.tool.show_line_range(
-            self.current_file_info, 
-            max(1, self.current_file_info['lines']-4), 
+            self.current_file_info,
+            max(1, self.current_file_info['lines']-4),
             self.current_file_info['lines']
         )
 
         print("\nEnter code to append:")
         new_code = self.get_multiline_input("")
-
         if new_code:
             self.tool.patch_engine.applied_patches.append({
                 'type': 'append',
@@ -685,7 +703,6 @@ class PatchMenu(MenuSystem):
                 'description': f'Append {len(new_code)} lines to end of file'
             })
             print("✅ Patch queued for application")
-            
         return True
 
     def _delete_block_menu(self) -> bool:
@@ -694,7 +711,7 @@ class PatchMenu(MenuSystem):
             start_line = int(self.get_input("Start line to delete"))
             end_line = int(self.get_input("End line to delete"))
 
-            if (start_line < 1 or end_line > self.current_file_info['lines'] or 
+            if (start_line < 1 or end_line > self.current_file_info['lines'] or
                 start_line > end_line):
                 print("❌ Invalid line range")
                 return True
@@ -712,16 +729,16 @@ class PatchMenu(MenuSystem):
                 print("✅ Delete operation queued")
             else:
                 print("❌ Deletion cancelled")
-                
+
         except ValueError:
             print("❌ Invalid line numbers")
-            
+
         return True
 
     def _show_patch_queue(self) -> bool:
         """Show current patch queue"""
         patches = self.tool.patch_engine.applied_patches
-        
+
         if not patches:
             print("❌ No patches in queue")
             return True
@@ -735,7 +752,7 @@ class PatchMenu(MenuSystem):
                 if len(patch['code']) > 2:
                     code_preview += f" ... (+{len(patch['code'])-2} lines)"
                 print(f"      Code: {code_preview}")
-                
+
         return True
 
     def _preview_changes(self) -> bool:
@@ -743,7 +760,7 @@ class PatchMenu(MenuSystem):
         if not self.tool.patch_engine.applied_patches:
             print("❌ No patches to preview")
             return True
-            
+
         if hasattr(self.tool, 'diff_engine'):
             # Get current file path from context
             file_path = self.current_file_info['relative_path']
@@ -752,13 +769,13 @@ class PatchMenu(MenuSystem):
             )
         else:
             print("❌ Diff preview not available")
-            
+
         return True
 
     def _apply_patches(self, file_path: str) -> bool:
         """Apply all queued patches"""
         patches = self.tool.patch_engine.applied_patches
-        
+
         if not patches:
             print("❌ No patches to apply")
             return True
@@ -774,11 +791,11 @@ class PatchMenu(MenuSystem):
 
         # Use the patch engine to apply patches
         success, result = self.tool.patch_engine.apply_patches(file_path, patches)
-        
+
         if success:
             print(f"\n🎉 Successfully applied {result['successful_patches']}/{len(patches)} patches")
             print(f"📊 File changed: {result['original_lines']} → {result['new_lines']} lines")
-            
+
             # Record in history if available
             if hasattr(self.tool, 'patch_history'):
                 original_content = self.tool.file_manager.read_file_lines(file_path)
@@ -786,20 +803,19 @@ class PatchMenu(MenuSystem):
                     self.tool.patch_history.record_operation(
                         file_path, patches, original_content, result
                     )
-            
+
             # Show summary
             self._show_patch_summary(file_path)
-            
             # Clear applied patches
             self.tool.patch_engine.applied_patches = []
-            
+
             return False  # Exit patch menu after successful application
         else:
             print(f"❌ Patch application failed: {result.get('error', 'Unknown error')}")
             if 'failed_patches' in result:
                 for failed in result['failed_patches']:
                     print(f"   - {failed['patch']['description']}: {failed['error']}")
-                    
+
         return True
 
     def _show_patch_summary(self, file_path: str):
@@ -815,8 +831,8 @@ class PatchMenu(MenuSystem):
                 if file_info['lines'] > 5:
                     print("\nLast 5 lines:")
                     self.tool.show_line_range(
-                        file_info, 
-                        max(1, file_info['lines']-4), 
+                        file_info,
+                        max(1, file_info['lines']-4),
                         file_info['lines']
                     )
 
@@ -829,7 +845,7 @@ class PatchMenu(MenuSystem):
 
 class SettingsMenu(MenuSystem):
     """Settings menu system"""
-    
+
     def show_settings_menu(self):
         """Display settings menu"""
         while True:
@@ -843,9 +859,9 @@ class SettingsMenu(MenuSystem):
                 {'key': '7', 'label': "Reset to defaults"},
                 {'key': '8', 'label': "Save and back"}
             ]
-            
+
             choice = self.display_menu("⚙️ SETTINGS", options)
-            
+
             if choice == '1':
                 self._toggle_setting('auto_backup')
             elif choice == '2':
@@ -873,7 +889,7 @@ class SettingsMenu(MenuSystem):
     def _change_max_preview_lines(self):
         """Change max preview lines setting"""
         try:
-            new_max = int(self.get_input("New max preview lines", 
+            new_max = int(self.get_input("New max preview lines",
                                        str(self.tool.config_manager.get('max_preview_lines'))))
             if 10 <= new_max <= 200:
                 self.tool.config_manager.set('max_preview_lines', new_max)
@@ -886,7 +902,7 @@ class SettingsMenu(MenuSystem):
     def _change_backup_days(self):
         """Change backup keep days setting"""
         try:
-            new_days = int(self.get_input("Backup keep days", 
+            new_days = int(self.get_input("Backup keep days",
                                         str(self.tool.config_manager.get('backup_keep_days'))))
             if 1 <= new_days <= 365:
                 self.tool.config_manager.set('backup_keep_days', new_days)

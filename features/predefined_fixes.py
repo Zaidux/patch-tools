@@ -11,12 +11,13 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
 import importlib.util
 import inspect
+from utils import RegexUtils, LineUtils, PatchValidator
 
 
 class PatchLibrary:
     """Manages a library of predefined patches with dynamic loading"""
-    
-    def __init__(self, patches_dir: str = "patches/"):
+
+    def __init__(self, patches_dir: str = "patches/", regex_utils=None, line_utils=None):
         self.patches_dir = patches_dir
         self.regex_utils = regex_utils or RegexUtils()
         self.line_utils = line_utils or LineUtils()
@@ -28,10 +29,10 @@ class PatchLibrary:
         """Load all patch definitions from patches directory"""
         # Create patches directory if it doesn't exist
         os.makedirs(self.patches_dir, exist_ok=True)
-        
+
         # Load from built-in patches first
         self._load_builtin_patches()
-        
+
         # Load from external patch files
         self._load_external_patches()
 
@@ -72,7 +73,7 @@ class PatchLibrary:
                         }
                     ],
                     "dependencies": [],
-                    "author": "Security Team", 
+                    "author": "Security Team",
                     "version": "1.0"
                 }
             },
@@ -80,7 +81,7 @@ class PatchLibrary:
                 "add_type_hints": {
                     "name": "Add Python Type Hints",
                     "description": "Add basic type hints to function definitions",
-                    "category": "code_quality", 
+                    "category": "code_quality",
                     "severity": "low",
                     "files": ["**/*.py"],
                     "patches": [
@@ -99,7 +100,7 @@ class PatchLibrary:
                     "name": "Fix Import Order",
                     "description": "Reorder imports according to PEP8 standards",
                     "category": "code_quality",
-                    "severity": "low", 
+                    "severity": "low",
                     "files": ["**/*.py"],
                     "patches": [
                         {
@@ -123,7 +124,7 @@ class PatchLibrary:
                     "files": ["**/*.py"],
                     "patches": [
                         {
-                            "type": "replace_pattern", 
+                            "type": "replace_pattern",
                             "pattern": r'result\s*=\s*\"\"\s*\n\s*for\s+(\w+)\s+in\s+(\w+)\s*:\s*\n\s*result\s*\+=\s*(\w+)',
                             "replacement": "result = ''.join(\\3 for \\1 in \\2)",
                             "validation": "same_output"
@@ -135,7 +136,7 @@ class PatchLibrary:
                 }
             }
         }
-        
+
         for category, patches in builtin_patches.items():
             self.categories[category] = category.replace('_', ' ').title()
             for patch_id, patch_def in patches.items():
@@ -144,9 +145,15 @@ class PatchLibrary:
     def _load_external_patches(self):
         """Load patch definitions from external Python files"""
         patch_files = glob.glob(os.path.join(self.patches_dir, "*.py"))
-        
+        patch_files = [f for f in patch_files if not f.endswith('__init__.py')]
+
         for patch_file in patch_files:
             try:
+                module_name = f"patch_{Path(patch_file).stem}"
+                # Skip if it's an __init__ file
+                if module_name == "patch___init__":
+                    continue
+
                 spec = importlib.util.spec_from_file_location(
                     f"patch_{Path(patch_file).stem}", patch_file
                 )
@@ -157,11 +164,11 @@ class PatchLibrary:
                 if hasattr(module, 'PATCHES'):
                     for patch_id, patch_def in module.PATCHES.items():
                         self.patches[patch_id] = patch_def
-                
+
                 # Also look for patch classes
                 for name, obj in inspect.getmembers(module):
-                    if (inspect.isclass(obj) and 
-                        hasattr(obj, 'patch_id') and 
+                    if (inspect.isclass(obj) and
+                        hasattr(obj, 'patch_id') and
                         hasattr(obj, 'apply')):
                         self.patches[obj.patch_id] = obj
                         
@@ -174,7 +181,7 @@ class PatchLibrary:
 
     def get_patches_by_category(self, category: str) -> Dict[str, Dict]:
         """Get all patches in a category"""
-        return {pid: patch for pid, patch in self.patches.items() 
+        return {pid: patch for pid, patch in self.patches.items()
                 if patch.get('category') == category}
 
     def get_patch(self, patch_id: str) -> Optional[Dict]:
@@ -191,14 +198,14 @@ class PatchLibrary:
                 query in patch_def.get('description', '').lower() or
                 query in patch_def.get('category', '').lower()):
                 results[patch_id] = patch_def
-                
+
         return results
 
-    def create_custom_patch(self, name: str, description: str, patches: List[Dict], 
+    def create_custom_patch(self, name: str, description: str, patches: List[Dict],
                           category: str = "custom", **kwargs):
         """Create a new custom patch definition"""
         patch_id = name.lower().replace(' ', '_')
-        
+
         self.patches[patch_id] = {
             "name": name,
             "description": description,
@@ -210,19 +217,19 @@ class PatchLibrary:
             "files": kwargs.get('files', ['**/*']),
             "dependencies": kwargs.get('dependencies', [])
         }
-        
+
         return patch_id
 
     def save_custom_patch(self, patch_id: str, filename: str = None):
         """Save a custom patch to file"""
         if patch_id not in self.patches:
             return False
-            
+
         if not filename:
             filename = f"{patch_id}.py"
-            
+
         filepath = os.path.join(self.patches_dir, filename)
-        
+
         try:
             with open(filepath, 'w') as f:
                 f.write(f'# Custom Patch: {self.patches[patch_id]["name"]}\n')
@@ -238,7 +245,7 @@ class PatchLibrary:
 
 class PredefinedFixes:
     """Applies predefined fixes with advanced features"""
-    
+
     def __init__(self, patch_engine, file_manager, patch_library: PatchLibrary = None):
         self.patch_engine = patch_engine
         self.file_manager = file_manager
@@ -250,7 +257,7 @@ class PredefinedFixes:
         while True:
             print(f"\n🛠️ PREDEFINED FIXES")
             print("=" * 60)
-            
+
             categories = self.patch_library.get_categories()
             for i, (cat_id, cat_name) in enumerate(categories.items(), 1):
                 patch_count = len(self.patch_library.get_patches_by_category(cat_id))
@@ -261,7 +268,7 @@ class PredefinedFixes:
             print(f"{len(categories) + 3}. 📊 Fix history")
             print("0. ↩️  Back to main menu")
             print("=" * 60)
-            
+
             try:
                 choice = input("\nSelect category: ").strip()
                 
@@ -282,7 +289,7 @@ class PredefinedFixes:
                         print("❌ Invalid choice")
                 else:
                     print("❌ Invalid input")
-                    
+
             except KeyboardInterrupt:
                 print("\n⏹️  Operation cancelled.")
                 break
@@ -296,20 +303,20 @@ class PredefinedFixes:
         if not patches:
             print(f"❌ No fixes found in category: {category}")
             return
-            
+
         while True:
             print(f"\n📁 {category.replace('_', ' ').title()} FIXES")
             print("=" * 50)
-            
+
             patch_list = list(patches.items())
             for i, (patch_id, patch_def) in enumerate(patch_list, 1):
                 severity_icon = self._get_severity_icon(patch_def.get('severity', 'medium'))
                 print(f"{i}. {severity_icon} {patch_def['name']}")
                 print(f"   📝 {patch_def['description']}")
-            
+
             print("0. ↩️  Back")
             print("=" * 50)
-            
+
             try:
                 choice = input("\nSelect fix to view details: ").strip()
                 
@@ -324,7 +331,7 @@ class PredefinedFixes:
                         print("❌ Invalid choice")
                 else:
                     print("❌ Invalid input")
-                    
+
             except KeyboardInterrupt:
                 break
 
@@ -338,21 +345,21 @@ class PredefinedFixes:
         print(f"👤 Author: {patch_def.get('author', 'Unknown')}")
         print(f"🔄 Version: {patch_def.get('version', '1.0')}")
         print(f"📄 Files: {', '.join(patch_def.get('files', ['**/*']))}")
-        
+
         if patch_def.get('dependencies'):
             print(f"📦 Dependencies: {', '.join(patch_def['dependencies'])}")
-        
+
         print(f"\n🔧 Patches to apply:")
         for i, patch in enumerate(patch_def.get('patches', []), 1):
             print(f"  {i}. {patch.get('type', 'unknown')}: {patch.get('pattern', 'N/A')}")
-        
+
         print("\n1. ✅ Apply this fix")
         print("2. 🔍 Preview changes")
         print("3. 💾 Save as custom patch")
         print("0. ↩️  Back")
         
         choice = input("\nSelect option: ").strip()
-        
+
         if choice == '1':
             self._apply_predefined_fix(patch_id, patch_def)
         elif choice == '2':
@@ -364,35 +371,35 @@ class PredefinedFixes:
     def _apply_predefined_fix(self, patch_id: str, patch_def: Dict):
         """Apply a predefined fix"""
         print(f"\n🎯 Applying: {patch_def['name']}")
-        
+
         # Find files matching the pattern
         target_files = self._find_target_files(patch_def.get('files', ['**/*']))
         
         if not target_files:
             print("❌ No files found matching the pattern")
             return False
-            
+
         print(f"📄 Found {len(target_files)} files to patch")
-        
+
         # Show files and get confirmation
         for i, file_path in enumerate(target_files[:10], 1):  # Show first 10 files
             print(f"  {i}. {file_path}")
         if len(target_files) > 10:
             print(f"  ... and {len(target_files) - 10} more files")
-            
+
         confirm = input("\n✅ Apply fix to these files? (y/n): ").lower()
         if confirm != 'y':
             print("❌ Fix application cancelled")
             return False
-            
+
         # Apply patches to each file
         success_count = 0
         for file_path in target_files:
             if self._apply_fix_to_file(file_path, patch_def):
                 success_count += 1
-                
+
         print(f"\n🎉 Successfully applied fix to {success_count}/{len(target_files)} files")
-        
+
         # Record the application
         self.applied_fixes.append({
             'patch_id': patch_id,
@@ -401,7 +408,7 @@ class PredefinedFixes:
             'files_affected': success_count,
             'total_files': len(target_files)
         })
-        
+
         return success_count > 0
 
     def _apply_fix_to_file(self, file_path: str, patch_def: Dict) -> bool:
@@ -409,7 +416,15 @@ class PredefinedFixes:
         file_info = self.file_manager.get_file_info(file_path)
         if not file_info:
             return False
-            
+
+        # Validate patch before applying
+        validator = PatchValidator(self.patch_library.regex_utils)
+        for patch_config in patch_def.get('patches', []):
+            is_valid, message = validator.validate_patch(patch_config, file_info)
+            if not is_valid:
+                print(f"❌ Patch validation failed for {file_path}: {message}")
+                return False
+
         patches = []
         for patch_config in patch_def.get('patches', []):
             patches.append({
@@ -421,7 +436,7 @@ class PredefinedFixes:
                 'end_line': patch_config.get('end_line'),
                 'description': f"Predefined fix: {patch_def['name']}"
             })
-            
+
         success, result = self.patch_engine.apply_patches(file_path, patches)
         return success
 
@@ -431,7 +446,7 @@ class PredefinedFixes:
         
         target_files = []
         base_path = self.file_manager.base_path
-        
+
         for pattern in file_patterns:
             # Simple glob pattern matching
             for root, dirs, files in os.walk(base_path):
@@ -441,14 +456,14 @@ class PredefinedFixes:
                     
                     if any(fnmatch.fnmatch(rel_path, pattern) for pattern in file_patterns):
                         target_files.append(rel_path)
-                        
+
         return list(set(target_files))  # Remove duplicates
 
     def _preview_fix(self, patch_id: str, patch_def: Dict):
         """Preview changes without applying"""
         print(f"\n🔍 Previewing: {patch_def['name']}")
         print("⚠️  Preview mode - no changes will be applied")
-        
+
         target_files = self._find_target_files(patch_def.get('files', ['**/*']))[:5]  # Limit preview
         
         for file_path in target_files:
@@ -458,7 +473,7 @@ class PredefinedFixes:
                 # Simulate patches to show what would change
                 for patch_config in patch_def.get('patches', []):
                     matches = self.patch_engine.find_code_blocks(
-                        file_info, 
+                        file_info,
                         patch_config.get('pattern', ''),
                         context_lines=2
                     )
@@ -473,13 +488,13 @@ class PredefinedFixes:
         query = input("\n🔍 Search fixes: ").strip()
         if not query:
             return
-            
+
         results = self.patch_library.search_patches(query)
         
         if not results:
             print("❌ No fixes found matching your search")
             return
-            
+
         print(f"\n🔍 SEARCH RESULTS for '{query}':")
         for patch_id, patch_def in results.items():
             print(f"  • {patch_def['name']} ({patch_def.get('category', 'uncategorized')})")
@@ -489,11 +504,11 @@ class PredefinedFixes:
         """Menu for managing custom patches"""
         print("\n💾 CUSTOM PATCHES")
         print("1. 🆕 Create new custom patch")
-        print("2. 📋 List custom patches") 
+        print("2. 📋 List custom patches")
         print("0. ↩️  Back")
-        
+
         choice = input("\nSelect option: ").strip()
-        
+
         if choice == '1':
             self._create_custom_patch()
         elif choice == '2':
@@ -502,22 +517,20 @@ class PredefinedFixes:
     def _create_custom_patch(self):
         """Interactive custom patch creation"""
         print("\n🆕 CREATE CUSTOM PATCH")
-        
         name = input("Patch name: ").strip()
         if not name:
             print("❌ Patch name is required")
             return
-            
+
         description = input("Description: ").strip()
         category = input("Category [custom]: ").strip() or "custom"
-        
+
         print("\n📝 Now define the patches (empty line to finish):")
         patches = []
         
         while True:
             print(f"\nPatch #{len(patches) + 1}:")
             patch_type = input("Type (insert_at_line/replace_range/replace_pattern/append) [replace_pattern]: ").strip() or "replace_pattern"
-            
             patch_config = {'type': patch_type}
             
             if patch_type == 'insert_at_line':
@@ -527,35 +540,35 @@ class PredefinedFixes:
                 patch_config['end_line'] = int(input("End line: "))
             elif patch_type in ['replace_pattern', 'insert_after', 'insert_before']:
                 patch_config['pattern'] = input("Pattern (regex): ").strip()
-                
+
             patch_config['code'] = self._get_multiline_input("Replacement code (empty line to finish): ")
-            
+
             patches.append(patch_config)
-            
+
             more = input("\nAdd another patch? (y/n) [n]: ").strip().lower()
             if more != 'y':
                 break
-                
+
         # Create the patch
         patch_id = self.patch_library.create_custom_patch(
             name, description, patches, category
         )
-        
+
         print(f"✅ Custom patch '{name}' created with ID: {patch_id}")
-        
+
         save = input("Save to file? (y/n) [y]: ").strip().lower()
         if save != 'n':
             self.patch_library.save_custom_patch(patch_id)
 
     def _list_custom_patches(self):
         """List all custom patches"""
-        custom_patches = {pid: patch for pid, patch in self.patch_library.patches.items() 
+        custom_patches = {pid: patch for pid, patch in self.patch_library.patches.items()
                          if patch.get('category') == 'custom'}
         
         if not custom_patches:
             print("❌ No custom patches found")
             return
-            
+
         print("\n💾 CUSTOM PATCHES:")
         for patch_id, patch_def in custom_patches.items():
             print(f"  • {patch_def['name']} ({patch_id})")
@@ -566,7 +579,7 @@ class PredefinedFixes:
         if not self.applied_fixes:
             print("❌ No fix history found")
             return
-            
+
         print("\n📊 FIX HISTORY:")
         for fix in self.applied_fixes[-10:]:  # Show last 10
             print(f"  • {fix['timestamp']}: {fix['name']}")
@@ -576,7 +589,7 @@ class PredefinedFixes:
         """Get icon for severity level"""
         icons = {
             'critical': '🔴',
-            'high': '🟠', 
+            'high': '🟠',
             'medium': '🟡',
             'low': '🟢'
         }
