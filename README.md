@@ -1,5 +1,4 @@
-```markdown
-# Professional Patch Tool
+## Professional Patch Tool
 
 A powerful, interactive file patching tool with advanced modular architecture, batch operations, and comprehensive patch library.
 
@@ -56,6 +55,9 @@ python3 patch_tool.py
 # Or make it executable and run directly
 chmod +x patch_tool.py
 ./patch_tool.py
+
+# Or simply run
+patch-tool
 ```
 
 📚 Comprehensive Usage Guide
@@ -486,5 +488,3 @@ This tool is designed for professional development use. Always:
 ---
 
 Professional Patch Tool - Your comprehensive solution for safe, efficient code modification and migration.
-
-```
